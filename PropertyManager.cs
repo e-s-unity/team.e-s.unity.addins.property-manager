@@ -135,21 +135,10 @@ namespace Es.Unity.Addins
 
             if(_TargetInstances.Count < 1) this.Reload();
 
-            if(_TargetInstances.Count < 1) return;
+            if(FilteredTargetInstances.Count() < 1) return;
 
-            foreach(var instance in _TargetInstances) {
+            foreach(var instance in FilteredTargetInstances) {
                 try {
-                    if(this.Mode == OperationMode.Set) {
-
-                    }
-                    else if(this.Mode == OperationMode.Replace) {
-                        if(object.Equals(this.TargetProperty.GetValue(instance), this.FindValue)) {
-                            continue;
-                        }
-                    }
-                    else {
-                        throw new NotSupportedException(this.Mode.ToString());
-                    }
                     this.TargetProperty.SetValue(instance, this.SetValue);
                     Debug.Log($"Set a new reference to the target property \"{this.TargetProperty.Name}\".");
                 }
@@ -162,6 +151,25 @@ namespace Es.Unity.Addins
 
         private ISet<UnityEngine.Object> _TargetInstances = new HashSet<UnityEngine.Object>();
 
+        internal IEnumerable<UnityEngine.Object> FilteredTargetInstances {
+            get {
+                if(this.Mode == OperationMode.Set) return _TargetInstances;
+                else if(this.Mode == OperationMode.Replace) {
+                    return _TargetInstances.Where(_ => CustomEquals(this.TargetProperty.GetValue(_) as UnityEngine.Object, this.FindValue));
+                }
+                return _TargetInstances;
+            }
+        }
+
+        private static bool CustomEquals(UnityEngine.Object? a, UnityEngine.Object? b) {
+            if(a == null) a = null;
+            if(b == null) b = null;
+            if(a is null) return b is null;
+            else {
+                return a.Equals(b);
+            }
+        }
+
         private void Reload() {
             _TargetInstances.Clear();
             foreach(var found in GameObject.FindObjectsByType(TargetType, FindObjectsSortMode.None)) {
@@ -171,8 +179,12 @@ namespace Es.Unity.Addins
 
         private void OnGUI() {
             Space();
+            if(GUILayout.Button("Reload")) {
+                this.Reload();
+            }
+            Space();
             using(var check = new ChangeCheckScope()) {
-                string typeName = DelayedTextField(new GUIContent("Target Type"), this.TargetType?.FullName ?? string.Empty);
+                string typeName = DelayedTextField(new GUIContent("Target Type", "The fully name of the target type."), this.TargetType?.FullName ?? string.Empty);
                 if(check.changed) {
                     try {
                         Type type = Type.GetType(typeName);
@@ -213,8 +225,10 @@ namespace Es.Unity.Addins
                     }
             }
             Space(4);
+            var instances = FilteredTargetInstances;
+            IntField(new GUIContent("Match"), instances.Count());
             using(new DisabledScope(true)) {
-                foreach(var item in _TargetInstances) {
+                foreach(var item in instances) {
                     ObjectField(new GUIContent($"{item.name}"), item);
                 }
             }
