@@ -1,0 +1,11 @@
+{
+  "name": "team.e-s.unity.addins.property-manager",
+  "version": "1.0.0",
+  "displayName": "Property Edit Tool",
+  "unity": "2023.2",
+  "license": "MIT",
+  "author": {
+    "name": "E/s",
+    "email": "lain@e-s.team"
+  }
+}
